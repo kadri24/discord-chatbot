@@ -86,6 +86,19 @@ never reach GitHub. The bot also creates the `chats` category and the
 
 ## Run
 
+### Manager window
+
+```sh
+python gui.py
+```
+
+A small desktop window to edit the configuration, start and stop the bot,
+watch its console output, and reset conversations with a click. On first
+start it creates `config.json` and `.env` for you and points you at whatever
+is still missing. Add `--debug` to open it with WebView devtools.
+
+### Console
+
 ```sh
 python main.py
 ```

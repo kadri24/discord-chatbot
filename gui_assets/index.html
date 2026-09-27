@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>discord-llm manager</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div class="brand">discord-llm <span class="sub">manager</span></div>
+    <div class="status"><span id="dot" class="dot"></span><span id="statusText">Stopped</span></div>
+  </header>
+
+  <main>
+    <section id="formPane">
+      <h2>Configuration</h2>
+
+      <label>Discord token
+        <input id="f-token" type="password" placeholder="DISCORD_TOKEN" autocomplete="off">
+      </label>
+      <label>Server ID
+        <input id="f-server_id" placeholder="right-click your server icon → Copy Server ID" autocomplete="off">
+      </label>
+      <label>API URL
+        <input id="f-api_url" placeholder="http://localhost:8080/v1" autocomplete="off">
+      </label>
+      <label>API key
+        <input id="f-api_key" placeholder="any non-empty value if your server needs none" autocomplete="off">
+      </label>
+      <label>Model
+        <input id="f-model" placeholder="model name the API expects" autocomplete="off">
+      </label>
+      <div class="row">
+        <label>Edit interval (s)
+          <input id="f-stream_edit_interval" type="number" step="0.5" min="0.5">
+        </label>
+        <label>Category
+          <input id="f-category_name">
+        </label>
+      </div>
+      <div class="row">
+        <label>New-chat channel
+          <input id="f-new_chat_name">
+        </label>
+        <label>Database path
+          <input id="f-database_path">
+        </label>
+      </div>
+      <label>System prompt (optional override)
+        <textarea id="f-system_prompt" rows="5" placeholder="empty = built-in persona from config.py"></textarea>
+      </label>
+
+      <div class="btnrow">
+        <button id="saveBtn" class="primary">Save</button>
+        <span id="saveMsg" class="msg"></span>
+      </div>
+    </section>
+
+    <section id="logPane">
+      <h2>Console</h2>
+      <div id="log"></div>
+      <div class="btnrow">
+        <button id="startBtn" class="primary">Start bot</button>
+        <button id="stopBtn">Stop</button>
+        <button id="resetBtn" class="danger">Reset conversations</button>
+      </div>
+      <div id="actionMsg" class="msg"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
