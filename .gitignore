@@ -2,6 +2,9 @@
 .env
 config.json
 
+# Internal development notes
+MEMORY.md
+
 # Python
 __pycache__/
 *.py[cod]
@@ -13,3 +16,10 @@ data/
 
 # Logs
 *.log
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
