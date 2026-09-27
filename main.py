@@ -10,6 +10,8 @@ from __future__ import annotations
 import logging
 import sys
 
+import discord
+
 import database as db
 from bot import ChatBot
 from config import load_config
@@ -33,7 +35,21 @@ def main() -> None:
         " | RESET MODE" if reset_mode else "",
     )
     bot = ChatBot(config, reset_mode=reset_mode)
-    bot.run(config.discord_token)
+    try:
+        bot.run(config.discord_token)
+    except discord.LoginFailure:
+        raise SystemExit(
+            "Discord rejected the bot token — the DISCORD_TOKEN in .env is wrong "
+            "or was reset.\nFix: regenerate the token in the Discord Developer "
+            "Portal (Your App → Bot → Reset Token), update .env, and start again."
+        )
+    except discord.PrivilegedIntentsRequired:
+        raise SystemExit(
+            "Discord refused the connection because required privileged intents "
+            "are disabled for this bot.\nFix: enable MESSAGE CONTENT INTENT in the "
+            "Discord Developer Portal (Your App → Bot → Privileged Gateway "
+            "Intents) and start again."
+        )
 
 
 if __name__ == "__main__":

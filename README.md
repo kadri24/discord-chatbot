@@ -184,9 +184,25 @@ built-in one entirely.
 
 ## Error handling
 
-If generation fails, the `Thinking...`/response message is edited to show
-`An error occurred while generating the response.` and the exception is logged
-to the console. The bot keeps running.
+If generation fails, the `Thinking...`/response message is edited to show a
+plain-language explanation of what happened and what to check — for example:
+
+- **API unreachable** — the `api_url` in `config.json` might be incorrect, or
+  the server isn't running (also shown when the connection drops mid-response)
+- **Timeout** — the server is overloaded or still loading the model; retry
+- **Rejected key (401)** — `api_key` is wrong for that endpoint
+- **Not found (404)** — the `model` name doesn't exist on the server, or the
+  URL is missing the `/v1`-style version path
+- **Denied (403)** — the key lacks access to that model or endpoint
+- **Rate limited (429)** — the provider is throttling; retry later
+- **Bad request (400/422)** — the model name or parameters aren't supported
+  (the server's own error detail is included)
+- **Server error (5xx)** — the LLM server itself failed; check its logs
+
+The full exception is always logged to the bot's console, partial output is
+kept, and the bot keeps running. Startup problems also exit with an
+explanation and a fix (e.g. a bad `DISCORD_TOKEN` or a disabled MESSAGE
+CONTENT intent).
 
 ## Reset mode details
 

@@ -17,12 +17,13 @@ import discord
 
 import database as db
 from config import Config
-from llm import LLMClient
+from llm import LLMClient, LLMError
 
 log = logging.getLogger(__name__)
 
 THINKING_TEXT = "Thinking..."
-ERROR_TEXT = "An error occurred while generating the response."
+ERROR_TEXT = ("An unexpected error occurred while generating the response — "
+              "the cause is in the bot's console output.")
 EMPTY_RESPONSE_TEXT = "*(no response)*"
 
 STREAM_SPLIT_LIMIT = 1900  # split long responses below Discord's 2000-char limit
@@ -419,20 +420,17 @@ class ChatBot(discord.Client):
             if partial and not recorded:
                 db.add_message(channel_id, role="assistant", content=partial, state="interrupted")
             raise  # displayed partial text stays in Discord untouched
-        except Exception:
+        except Exception as exc:
+            # LLMError carries a plain-language explanation (what happened and
+            # what to check); anything else gets the generic text. The full
+            # traceback always goes to the console log.
+            friendly = str(exc) if isinstance(exc, LLMError) else ERROR_TEXT
             log.exception("LLM generation failed for channel %s", channel_id)
             if not recorded:
                 partial = "".join(parts) + buffer
                 if partial:
                     db.add_message(channel_id, role="assistant", content=partial, state="interrupted")
-            target = current_message or status_message
-            try:
-                if target is not None:
-                    await target.edit(content=ERROR_TEXT)
-                else:
-                    await channel.send(ERROR_TEXT)
-            except discord.HTTPException:
-                log.exception("Failed to show the error message in channel %s", channel_id)
+            await self._show_error(channel, current_message or status_message, friendly)
 
     async def _edit_message(self, message, content):
         try:
@@ -441,3 +439,13 @@ class ChatBot(discord.Client):
             log.warning("Message %s was deleted while streaming", message.id)
         except discord.HTTPException:
             log.exception("Failed to edit message %s", message.id)
+
+    async def _show_error(self, channel, target, text):
+        """Show an error explanation in place of the status/partial message."""
+        try:
+            if target is not None:
+                await target.edit(content=text)
+            else:
+                await channel.send(text)
+        except discord.HTTPException:
+            log.exception("Failed to show the error message in channel %s", channel.id)

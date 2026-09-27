@@ -41,9 +41,9 @@ generation task: send "Thinking..." → stream from LLM → throttled edits
 
 | File | Responsibility |
 | --- | --- |
-| `main.py` | Entry point; `reset` in argv → reset mode; logging setup; `bot.run(token)` |
+| `main.py` | Entry point; `reset` in argv → reset mode; logging setup; `bot.run(token)` with friendly `SystemExit` on `LoginFailure` / `PrivilegedIntentsRequired` |
 | `bot.py` | py-cord `Client` subclass: events, structure ensure/repair/reset, conversation handling, streaming edits, `sanitize_channel_name`, `split_for_discord`, `build_llm_messages` |
-| `llm.py` | `LLMClient.stream_chat(messages)` (async generator of content deltas, filters inline `<think>` blocks) + `generate_title(user_message)` (disables thinking via `chat_template_kwargs`, plain fallback) |
+| `llm.py` | `LLMClient.stream_chat(messages)` (async generator of content deltas, filters inline `<think>` blocks) + `generate_title(user_message)` (disables thinking via `chat_template_kwargs`, plain fallback). API failures are re-raised as `LLMError` with a plain-language explanation (what happened + what to check, plus a short server detail for status errors) |
 | `database.py` | Schema init, conversation/message CRUD, `get_completed_messages` (only `state='complete'`), orphan/delete helpers |
 | `config.py` | `load_config()` → `Config` dataclass; validates; raises `SystemExit` with readable errors. Also holds `DEFAULT_SYSTEM_PROMPT` — the bot's default identity and writing voice, adapted to Discord's rendering |
 | `config.json` | server_id, api_url, api_key, model, stream_edit_interval, category_name, new_chat_name, database_path, optional system_prompt |
@@ -240,3 +240,12 @@ title renames, and any exceptions.
   LM Studio).
 - The first content edit intentionally bypasses the 5s throttle so
   `Thinking...` is replaced immediately; subsequent edits are throttled.
+- Error UX: `llm.py` maps OpenAI SDK exceptions to `LLMError` whose
+  message explains what happened and what to check (wrong api_url or server
+  not running, bad api_key, unknown model / missing `/v1`, rate limit,
+  unsupported request, 5xx; timeouts). Status errors (404/403/400/422/5xx)
+  append a short `Server said: ...` detail. `bot.py` shows that message in
+  the channel for generation failures (generic `ERROR_TEXT` for anything
+  else) while still recording interrupted partials; `main.py` exits with fix
+  instructions on `LoginFailure` and `PrivilegedIntentsRequired`.
+  `asyncio.CancelledError` is a `BaseException` and is never wrapped.
