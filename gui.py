@@ -3,10 +3,12 @@
 Usage:
     python gui.py            # open the manager window
     python gui.py --debug    # open it with WebView devtools enabled
+    python main.py           # same window (default entry point)
 
-The window edits config.json / .env and runs `main.py` as a child process,
-streaming its console output into the log pane. The GUI survives bot crashes;
-stopping the bot sends CTRL_BREAK so py-cord can shut down cleanly.
+The window edits config.json / .env and runs the bot as a child process
+(`main.py --console`), streaming its console output into the log pane. The
+GUI survives bot crashes; stopping the bot sends CTRL_BREAK so py-cord can
+shut down cleanly.
 """
 
 from __future__ import annotations
@@ -21,9 +23,8 @@ import time
 
 try:
     import webview
-except ImportError:
-    print("The GUI needs pywebview: pip install pywebview")
-    raise SystemExit(1)
+except ImportError as exc:  # main.py catches this and falls back to console
+    raise ImportError("The GUI needs pywebview: pip install pywebview") from exc
 
 from config import DEFAULT_CONFIG, ENV_TEMPLATE, load_config
 
@@ -54,7 +55,9 @@ class BotProcess:
                 return False
             flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
             self._proc = subprocess.Popen(
-                [sys.executable, os.path.join(APP_DIR, "main.py"), *args],
+                # --console is essential: main.py defaults to the GUI, and the
+                # child must be the bot itself, not another window.
+                [sys.executable, os.path.join(APP_DIR, "main.py"), "--console", *args],
                 cwd=APP_DIR,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -212,8 +215,8 @@ class Api:
         return self.start_bot(reset=True)
 
 
-def main() -> None:
-    debug = "--debug" in sys.argv[1:]
+def main(reset_on_start: bool = False, debug: bool = False) -> None:
+    debug = debug or "--debug" in sys.argv[1:]
     api = Api()
     window = webview.create_window(
         "discord-llm manager",
@@ -225,6 +228,12 @@ def main() -> None:
         background_color="#0f1115",
     )
     api.window = window
+    if reset_on_start:
+        # `python main.py reset` -> open the window and run the reset flow
+        def _auto_reset():
+            threading.Thread(target=api.reset_bot, daemon=True).start()
+
+        window.events.loaded += _auto_reset
     webview.start(debug=debug)
 
 

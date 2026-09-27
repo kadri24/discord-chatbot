@@ -86,21 +86,25 @@ never reach GitHub. The bot also creates the `chats` category and the
 
 ## Run
 
-### Manager window
+### Manager window (default)
 
 ```sh
-python gui.py
+python main.py
 ```
 
 A small desktop window to edit the configuration, start and stop the bot,
 watch its console output, and reset conversations with a click. On first
 start it creates `config.json` and `.env` for you and points you at whatever
-is still missing. Add `--debug` to open it with WebView devtools.
+is still missing. `python gui.py` opens the same window; add `--debug` for
+WebView devtools. If the GUI can't start (no display), it falls back to
+console mode.
 
 ### Console
 
+For headless machines or when you prefer the terminal:
+
 ```sh
-python main.py
+python main.py --console
 ```
 
 Type anything in `new-chat` to start: the channel gets a generated title and
@@ -110,7 +114,8 @@ Wipe everything the bot owns (all conversation channels + stored messages)
 and keep running:
 
 ```sh
-python main.py reset
+python main.py reset              # opens the window and resets
+python main.py --console reset    # headless: reset, then run in the console
 ```
 
 ## Good to know
