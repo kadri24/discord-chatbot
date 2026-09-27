@@ -143,7 +143,7 @@ class Api:
     """
 
     def _push_start(self) -> None:
-        self._push("window.setRunning(true);")
+        _push("window.setRunning(true);")
 
     # -- helpers -------------------------------------------------------------
 
