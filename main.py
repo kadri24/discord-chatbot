@@ -24,6 +24,10 @@ def main() -> None:
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+    # Keep the console readable: the LLM SDK's internal retry chatter and the
+    # "voice will NOT be supported" warning (this bot is text-only) are noise.
+    logging.getLogger("openai").setLevel(logging.WARNING)
+    logging.getLogger("discord.utils").setLevel(logging.ERROR)
     reset_mode = "reset" in sys.argv[1:]
     config = load_config()
     db.init(config.database_path)

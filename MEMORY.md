@@ -249,3 +249,9 @@ title renames, and any exceptions.
   else) while still recording interrupted partials; `main.py` exits with fix
   instructions on `LoginFailure` and `PrivilegedIntentsRequired`.
   `asyncio.CancelledError` is a `BaseException` and is never wrapped.
+- Console noise control: `LLMError` is logged via `log.error` as one clean
+  line (no chained SDK tracebacks — they add no information beyond the
+  friendly message); only unexpected non-API errors keep `log.exception`.
+  `main.py` raises the `openai` logger to WARNING (hides the SDK's
+  "Retrying request..." chatter) and `discord.utils` to ERROR (hides the
+  PyNaCl "voice will NOT be supported" warning — the bot is text-only).

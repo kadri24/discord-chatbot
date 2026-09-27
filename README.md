@@ -199,10 +199,11 @@ plain-language explanation of what happened and what to check — for example:
   (the server's own error detail is included)
 - **Server error (5xx)** — the LLM server itself failed; check its logs
 
-The full exception is always logged to the bot's console, partial output is
-kept, and the bot keeps running. Startup problems also exit with an
-explanation and a fix (e.g. a bad `DISCORD_TOKEN` or a disabled MESSAGE
-CONTENT intent).
+These explanations are also written to the console as a single clean log
+line — the LLM SDK's internal retry chatter and tracebacks are suppressed
+(full tracebacks still appear for unexpected non-API errors). Partial output
+is kept and the bot keeps running. Startup problems exit with an explanation
+and a fix (e.g. a bad `DISCORD_TOKEN` or a disabled MESSAGE CONTENT intent).
 
 ## Reset mode details
 

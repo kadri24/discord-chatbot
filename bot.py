@@ -358,6 +358,11 @@ class ChatBot(discord.Client):
             log.info("Channel %s renamed to '%s'", channel.id, name)
         except asyncio.CancelledError:
             raise
+        except LLMError as exc:
+            # One clean line — the message already says what happened; the
+            # SDK's chained tracebacks would only add noise.
+            log.error("Title generation failed for channel %s — keeping channel id as name: %s",
+                      channel.id, exc)
         except Exception:
             log.exception("Title generation failed for channel %s — keeping channel id as name", channel.id)
 
@@ -421,11 +426,15 @@ class ChatBot(discord.Client):
                 db.add_message(channel_id, role="assistant", content=partial, state="interrupted")
             raise  # displayed partial text stays in Discord untouched
         except Exception as exc:
-            # LLMError carries a plain-language explanation (what happened and
-            # what to check); anything else gets the generic text. The full
-            # traceback always goes to the console log.
-            friendly = str(exc) if isinstance(exc, LLMError) else ERROR_TEXT
-            log.exception("LLM generation failed for channel %s", channel_id)
+            if isinstance(exc, LLMError):
+                # The message already explains what happened and what to
+                # check — one clean log line; the SDK's chained tracebacks
+                # would only add noise.
+                log.error("LLM generation failed for channel %s: %s", channel_id, exc)
+                friendly = str(exc)
+            else:
+                log.exception("LLM generation failed for channel %s", channel_id)
+                friendly = ERROR_TEXT
             if not recorded:
                 partial = "".join(parts) + buffer
                 if partial:
