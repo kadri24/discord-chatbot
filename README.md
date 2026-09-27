@@ -1,4 +1,4 @@
-# discord-llm
+# discord-chatbot
 
 A minimal Discord bot that turns your server into a ChatGPT-style chat with
 any OpenAI-compatible LLM API — local servers like llama.cpp, LM Studio or
@@ -27,8 +27,8 @@ Ollama, or hosted providers. No commands, no dashboard: you just chat.
 ### 1. Install
 
 ```sh
-git clone <your-repo-url>
-cd discord-llm
+git clone https://github.com/kadri24/discord-chatbot.git
+cd discord-chatbot
 python -m venv venv
 venv\Scripts\activate        # Windows  (macOS/Linux: source venv/bin/activate)
 pip install -r requirements.txt
@@ -52,15 +52,16 @@ pip install -r requirements.txt
 
 ### 3. Configure
 
-Nothing to copy by hand — the first start creates both `config.json` and
-`.env` with starter values, tells you exactly what is missing, and tries to
-open the file in your editor:
+Nothing to copy by hand — the manager window creates both `config.json` and
+`.env` on first start and shows you exactly what is missing:
 
 ```sh
 python main.py
 ```
 
-Fill in what it asks for:
+Fill in the fields and click **Save**.
+
+**`.env`** — your bot token (Portal → Your App → Bot → Reset Token):
 
 ```
 DISCORD_TOKEN=your-bot-token
@@ -80,7 +81,7 @@ DISCORD_TOKEN=your-bot-token
 | `database_path` | SQLite file location (default `data/chat.db`) |
 | `system_prompt` | Optional: replace the built-in persona with your own |
 
-Then start the bot again. Both files are gitignored, so your token and IDs
+Then hit **Start bot**. Both files are gitignored, so your token and IDs
 never reach GitHub. The bot also creates the `chats` category and the
 `new-chat` channel by themselves — no channel IDs need to be configured.
 
@@ -127,3 +128,7 @@ python main.py --console reset    # headless: reset, then run in the console
   running"*) and keeps running; technical details land in the console.
 - The bot's identity and writing voice live in `DEFAULT_SYSTEM_PROMPT` in
   `config.py` — set `system_prompt` in `config.json` to give it your own.
+
+## License
+
+[MIT](LICENSE) — free to use, modify and share.
