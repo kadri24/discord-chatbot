@@ -105,27 +105,42 @@ class BotProcess:
                 self._proc = None
 
 
+# Python -> UI push. Module-level on purpose: pywebview walks every public
+# attribute of the js_api object recursively when building the JS bridge, and
+# a stored pywebview Window reaches native -> WinForms Form ->
+# AccessibilityObject -> Bounds -> Empty -> Empty -> ... — an infinite .NET
+# property chain that kills the bridge with RecursionError (issue #1815).
+# Keep the window and the bot OUT of the Api object.
+
+_WINDOW = None  # pywebview window, set in main()
+
+
+def _push(js: str) -> None:
+    """Run JS inside the window from any thread; skipped when it's closing."""
+    if _WINDOW is not None:
+        try:
+            _WINDOW.evaluate_js(js)
+        except Exception:
+            pass  # window is closing or gone
+
+
+def _push_line(line: str) -> None:
+    _push(f"window.appendLog({json.dumps(line)});")
+
+
+def _push_exit(code) -> None:
+    _push(f"window.onBotExit({json.dumps(str(code))});")
+
+
+_BOT = BotProcess(_push_line, _push_exit)
+
+
 class Api:
-    """Exposed to the frontend as window.pywebview.api.*"""
+    """Exposed to the frontend as window.pywebview.api.*
 
-    def __init__(self):
-        self.window = None
-        self.bot = BotProcess(self._push_line, self._push_exit)
-
-    # -- Python -> UI push ---------------------------------------------------
-
-    def _push(self, js: str) -> None:
-        if self.window is not None:
-            try:
-                self.window.evaluate_js(js)
-            except Exception:
-                pass  # window is closing or gone
-
-    def _push_line(self, line: str) -> None:
-        self._push(f"window.appendLog({json.dumps(line)});")
-
-    def _push_exit(self, code) -> None:
-        self._push(f"window.onBotExit({json.dumps(str(code))});")
+    Keep this class free of data attributes (see the note above _WINDOW):
+    only the five JS-callable methods below belong here.
+    """
 
     def _push_start(self) -> None:
         self._push("window.setRunning(true);")
@@ -171,7 +186,7 @@ class Api:
         return {
             "config": {key: raw.get(key, "") for key in CONFIG_KEYS},
             "token": token,
-            "running": self.bot.running,
+            "running": _BOT.running,
         }
 
     def save_config(self, values: dict, token: str) -> dict:
@@ -189,36 +204,37 @@ class Api:
         return {"ok": problem is None, "message": problem or "Saved."}
 
     def start_bot(self, reset: bool = False) -> dict:
-        if self.bot.running:
+        if _BOT.running:
             return {"ok": False, "message": "The bot is already running."}
         problem = self._validate()
         if problem:
             return {"ok": False, "message": problem}
-        if not self.bot.start(*(["reset"] if reset else [])):
+        if not _BOT.start(*(["reset"] if reset else [])):
             return {"ok": False, "message": "The bot is already running."}
         self._push_start()
         return {"ok": True, "message": "Resetting conversations..." if reset else "Starting..."}
 
     def stop_bot(self) -> dict:
-        if not self.bot.running:
+        if not _BOT.running:
             return {"ok": False, "message": "The bot is not running."}
-        self.bot.stop()
+        _BOT.stop()
         return {"ok": True, "message": "Stopping..."}
 
     def reset_bot(self) -> dict:
         """Stop the running bot, then start it in reset mode."""
-        if self.bot.running:
-            self.bot.stop()
+        if _BOT.running:
+            _BOT.stop()
             deadline = time.time() + 10
-            while self.bot.running and time.time() < deadline:
+            while _BOT.running and time.time() < deadline:
                 time.sleep(0.2)
         return self.start_bot(reset=True)
 
 
 def main(reset_on_start: bool = False, debug: bool = False) -> None:
+    global _WINDOW
     debug = debug or "--debug" in sys.argv[1:]
     api = Api()
-    window = webview.create_window(
+    _WINDOW = webview.create_window(
         "discord-llm manager",
         os.path.join(APP_DIR, "gui_assets", "index.html"),
         js_api=api,
@@ -227,13 +243,12 @@ def main(reset_on_start: bool = False, debug: bool = False) -> None:
         min_size=(840, 560),
         background_color="#0f1115",
     )
-    api.window = window
     if reset_on_start:
         # `python main.py reset` -> open the window and run the reset flow
         def _auto_reset():
             threading.Thread(target=api.reset_bot, daemon=True).start()
 
-        window.events.loaded += _auto_reset
+        _WINDOW.events.loaded += _auto_reset
     webview.start(debug=debug)
 
 
