@@ -1,0 +1,15 @@
+# Secrets & local configuration (never commit real values)
+.env
+config.json
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Runtime data (SQLite database)
+data/
+
+# Logs
+*.log
