@@ -52,15 +52,15 @@ pip install -r requirements.txt
 
 ### 3. Configure
 
-Copy the two templates and fill in your values — both real files are
-gitignored, so your token never reaches GitHub:
+Nothing to copy by hand — the first start creates both `config.json` and
+`.env` with starter values, tells you exactly what is missing, and tries to
+open the file in your editor:
 
 ```sh
-copy .env.example .env          # Windows  (macOS/Linux: cp .env.example .env)
-copy config.example.json config.json
+python main.py
 ```
 
-**`.env`** — your bot token (Portal → Your App → Bot → Reset Token):
+Fill in what it asks for:
 
 ```
 DISCORD_TOKEN=your-bot-token
@@ -80,8 +80,9 @@ DISCORD_TOKEN=your-bot-token
 | `database_path` | SQLite file location (default `data/chat.db`) |
 | `system_prompt` | Optional: replace the built-in persona with your own |
 
-On startup the bot creates the `chats` category and the `new-chat` channel by
-themselves — no channel IDs need to be configured.
+Then start the bot again. Both files are gitignored, so your token and IDs
+never reach GitHub. The bot also creates the `chats` category and the
+`new-chat` channel by themselves — no channel IDs need to be configured.
 
 ## Run
 

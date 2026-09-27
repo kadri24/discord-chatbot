@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
+import sys
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
@@ -65,11 +67,63 @@ class Config:
     system_prompt: str
 
 
+_ENV_PATH = ".env"
+
+# Starter values written on first run: an example default for the optional
+# api_url, empty for everything the user must fill in themselves.
+DEFAULT_CONFIG = {
+    "server_id": "",
+    "api_url": "http://localhost:8080/v1",
+    "api_key": "",
+    "model": "",
+    "stream_edit_interval": 5,
+    "category_name": "chats",
+    "new_chat_name": "new-chat",
+    "database_path": "data/chat.db",
+}
+
+ENV_TEMPLATE = "DISCORD_TOKEN=\n"
+
+
+def _open_file_for_editing(path: str) -> bool:
+    """Best-effort: open a file in the OS default editor. Returns False when
+    that isn't possible (headless machine, missing tool, …)."""
+    try:
+        if sys.platform == "win32":
+            os.startfile(path)
+            return True
+        opener = "open" if sys.platform == "darwin" else "xdg-open"
+        return subprocess.run([opener, path], check=False).returncode == 0
+    except Exception:
+        return False
+
+
+def ensure_setup(config_path: str = "config.json"):
+    """First-run convenience: create config.json and .env with starter values
+    when they are missing, so there is a file to fill in instead of having to
+    copy templates by hand. Returns the list of created files."""
+    created = []
+    if not os.path.exists(config_path):
+        with open(config_path, "w", encoding="utf-8") as fh:
+            json.dump(DEFAULT_CONFIG, fh, indent=4)
+            fh.write("\n")
+        created.append(config_path)
+    if not os.path.exists(_ENV_PATH):
+        with open(_ENV_PATH, "w", encoding="utf-8") as fh:
+            fh.write(ENV_TEMPLATE)
+        created.append(_ENV_PATH)
+    if created:
+        print("First-time setup: created " + " and ".join(created) + ".")
+    return created
+
+
 def load_config(path: str = "config.json") -> Config:
-    """Load .env + config.json and validate the result.
+    """Load .env + config.json (creating them with starter values on first
+    run) and validate the result.
 
     Raises SystemExit with a readable message list when something is wrong.
     """
+    created = ensure_setup(path)
     load_dotenv()
     errors = []
 
@@ -120,7 +174,17 @@ def load_config(path: str = "config.json") -> Config:
     system_prompt = str(raw.get("system_prompt") or DEFAULT_SYSTEM_PROMPT)
 
     if errors:
-        raise SystemExit("Invalid configuration:\n- " + "\n- ".join(errors))
+        message = "Invalid configuration:\n- " + "\n- ".join(errors)
+        message += "\n\nFill in the values above and start the bot again."
+        if created:
+            # Guide the user straight to the file: prefer the config, fall
+            # back to .env when only the token is missing.
+            target = path if path in created else _ENV_PATH
+            if _open_file_for_editing(target):
+                message += f"\nOpened {target} in your editor — if no window appeared, edit it manually."
+            else:
+                message += f"\nEdit {target} manually."
+        raise SystemExit(message)
 
     return Config(
         server_id=server_id,
