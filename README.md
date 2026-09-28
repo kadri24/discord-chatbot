@@ -131,4 +131,5 @@ python main.py --console reset    # headless: reset, then run in the console
 
 ## License
 
-[MIT](LICENSE) — free to use, modify and share.
+[MIT-0](LICENSE) (MIT No Attribution) — free to use, modify and share; no
+attribution required.
